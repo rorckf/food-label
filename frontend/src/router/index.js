@@ -10,9 +10,12 @@ const lazyLoad = (view) => {
 
 const routes = [
     {
+        // 首页按运行模式分流:单机 App = 信息流首页;网页版 = 原上传页
         path: '/',
         name: 'Upload',
-        component: lazyLoad('Upload'),
+        component: () => isLocalMode()
+            ? import('@/views/AppHome.vue')
+            : import('@/views/Upload.vue'),
         meta: { requiresAuth: true }
     },
     {
