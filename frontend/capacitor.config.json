@@ -1,0 +1,13 @@
+{
+  "appId": "com.foodlabel.scan",
+  "appName": "食安扫一扫",
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

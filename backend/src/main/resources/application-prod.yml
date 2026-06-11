@@ -1,0 +1,16 @@
+# 生产环境配置（Docker 部署时通过 SPRING_PROFILES_ACTIVE=prod 激活）
+# 所有敏感值均来自环境变量，本文件不含任何密钥
+spring:
+  web:
+    resources:
+      static-locations:
+        - file:/app/dist/
+        - file:/app/uploads/
+
+mybatis-plus:
+  configuration:
+    # 生产环境关闭 SQL 控制台日志
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+file:
+  upload-dir: /app/uploads

@@ -1,0 +1,47 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?请在 .env 中设置 DB_PASSWORD}
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # 首次启动自动建库导数据（按文件名顺序执行）
+      - ./db/health_food_db.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./db/fill_additive_knowledge.sql:/docker-entrypoint-initdb.d/02-additive-fill.sql:ro
+      - ./db/food_library_dump.sql:/docker-entrypoint-initdb.d/03-food-library.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "80:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      QWEN_API_KEY: ${QWEN_API_KEY:?请在 .env 中设置 QWEN_API_KEY}
+      JWT_SECRET: ${JWT_SECRET:?请在 .env 中设置 JWT_SECRET}
+      ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:?请在 .env 中设置 ADMIN_SEED_PASSWORD}
+      FILE_BASE_URL: ${FILE_BASE_URL:?请在 .env 中设置 FILE_BASE_URL，如 http://服务器IP/uploads}
+      TZ: Asia/Shanghai
+    volumes:
+      - uploads:/app/uploads
+
+volumes:
+  mysql-data:
+  uploads:

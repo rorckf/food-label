@@ -1,0 +1,184 @@
+/* ====================================================
+   暖色温馨 · 桌面 Web 设计系统（欧式烘焙坊 / 牛皮纸笔记本）
+   ==================================================== */
+:root {
+  /* ── 背景层（羊皮纸感） ── */
+  --w-bg:           #FBF4E6;   /* 主背景：温暖米色 */
+  --w-bg-soft:      #F6ECD8;   /* 次级背景 */
+  --w-bg-deep:      #EEDFC3;   /* 分区背景 */
+  --w-surface:      #FFFBF2;   /* 卡片表面 */
+  --w-surface-2:    #FFF7E8;   /* 卡片次表面 */
+
+  /* ── 主色（琥珀 / 烘焙棕） ── */
+  --w-primary:        #B5632A;
+  --w-primary-hover:  #99501E;
+  --w-primary-soft:   #F1DCBE;
+  --w-primary-pale:   #FAEFDD;
+
+  /* ── 辅助色 ── */
+  --w-amber:        #C8863A;   /* 琥珀金 */
+  --w-amber-soft:   #E8B878;
+  --w-sage:         #6B8E6F;   /* 鼠尾草绿 */
+  --w-sage-soft:    #DCE8DD;
+  --w-terracotta:   #B34F3A;   /* 赤陶 */
+  --w-cream:        #EFDDB8;
+
+  /* ── 边界与分隔 ── */
+  --w-border:       #D9BE8E;
+  --w-border-soft:  #E8D3AC;
+  --w-divider:      #EAD9B8;
+
+  /* ── 文字层级 ── */
+  --w-ink:          #3A2410;   /* 主文字：深咖啡 */
+  --w-ink-mid:      #73573B;   /* 次要文字 */
+  --w-ink-soft:     #A88B68;   /* 辅助文字 */
+  --w-ink-mute:     #C9B090;   /* 占位文字 */
+
+  /* ── 语义色 ── */
+  --w-safe-bg:      #E6EFE3;
+  --w-safe-text:    #4E7A4A;
+  --w-warn-bg:      #FBEEDA;
+  --w-warn-text:    #B5632A;
+  --w-risk-bg:      #F5DFD8;
+  --w-risk-text:    #A63E25;
+
+  /* ── 阴影（温柔柔和，非冷硬） ── */
+  --w-shadow-xs:    0 1px 2px rgba(90, 55, 25, 0.05);
+  --w-shadow-sm:    0 2px 8px rgba(90, 55, 25, 0.07);
+  --w-shadow-md:    0 8px 24px rgba(90, 55, 25, 0.10);
+  --w-shadow-lg:    0 20px 50px rgba(90, 55, 25, 0.14);
+
+  /* ── 圆角 ── */
+  --w-radius-xs:    4px;
+  --w-radius-sm:    8px;
+  --w-radius-md:    14px;
+  --w-radius-lg:    22px;
+  --w-radius-xl:    32px;
+  --w-radius-full:  999px;
+
+  /* ── 字体 ── */
+  --w-font-serif:   "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", Georgia, serif;
+  --w-font-sans:    "Noto Sans SC", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+
+  /* ── 字号（桌面宽松） ── */
+  --w-fs-display:   44px;
+  --w-fs-h1:        32px;
+  --w-fs-h2:        24px;
+  --w-fs-h3:        18px;
+  --w-fs-body:      15px;
+  --w-fs-small:     13px;
+  --w-fs-tiny:      12px;
+
+  /* ── 间距节奏 ── */
+  --w-space-1:      4px;
+  --w-space-2:      8px;
+  --w-space-3:      12px;
+  --w-space-4:      16px;
+  --w-space-5:      24px;
+  --w-space-6:      32px;
+  --w-space-7:      48px;
+  --w-space-8:      64px;
+  --w-space-9:      96px;
+
+  /* ── 布局 ── */
+  --w-sidebar-w:    236px;
+  --w-brandbar-h:   64px;
+  --w-content-max:  1120px;
+
+  /* ── 动画曲线 ── */
+  --w-ease:         cubic-bezier(0.4, 0, 0.2, 1);
+  --w-ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── 兼容旧变量（过渡期，逐步移除） ── */
+  --warm-bg:            var(--w-bg);
+  --warm-bg-alt:        var(--w-bg-soft);
+  --warm-card:          var(--w-surface);
+  --warm-card-2:        var(--w-surface-2);
+  --warm-border:        var(--w-border);
+  --warm-divider:       var(--w-divider);
+  --warm-primary:       var(--w-primary);
+  --warm-primary-hover: var(--w-primary-hover);
+  --warm-primary-light: var(--w-primary-soft);
+  --warm-primary-pale:  var(--w-primary-pale);
+  --warm-amber:         var(--w-amber);
+  --warm-amber-soft:    var(--w-amber-soft);
+  --warm-sage:          var(--w-sage);
+  --warm-sage-light:    var(--w-sage-soft);
+  --warm-text:          var(--w-ink);
+  --warm-text-mid:      var(--w-ink-mid);
+  --warm-text-light:    var(--w-ink-soft);
+  --warm-safe-bg:       var(--w-safe-bg);
+  --warm-safe-text:     var(--w-safe-text);
+  --warm-warn-bg:       var(--w-warn-bg);
+  --warm-warn-text:     var(--w-warn-text);
+  --warm-risk-bg:       var(--w-risk-bg);
+  --warm-risk-text:     var(--w-risk-text);
+  --warm-shadow-sm:     var(--w-shadow-sm);
+  --warm-shadow-md:     var(--w-shadow-md);
+  --warm-shadow-lg:     var(--w-shadow-lg);
+  --bg-page:            var(--w-bg);
+  --surface:            var(--w-surface);
+  --text-main:          var(--w-ink);
+  --text-secondary:     var(--w-ink-mid);
+  --border-light:       var(--w-border-soft);
+  --divider:            var(--w-divider);
+  --primary:            var(--w-primary);
+  --primary-dark:       var(--w-primary-hover);
+  --primary-light:      var(--w-primary-pale);
+  --shadow-sm:          var(--w-shadow-sm);
+  --shadow-md:          var(--w-shadow-md);
+  --shadow-lg:          var(--w-shadow-lg);
+}
+
+/* ====================================================
+   夜间主题（Night Theme）
+   通过 <html data-theme="dark"> 启用
+   保留温润气质，整体降亮、提暖、加深层次
+   ==================================================== */
+[data-theme="dark"] {
+  /* ── 背景层（深咖啡夜色） ── */
+  --w-bg:           #1B140E;
+  --w-bg-soft:      #221A12;
+  --w-bg-deep:      #2C2117;
+  --w-surface:      #261D14;
+  --w-surface-2:    #2E2418;
+
+  /* ── 主色（夜间偏亮的暖琥珀，保证可读对比） ── */
+  --w-primary:        #E08A4A;
+  --w-primary-hover:  #F1A468;
+  --w-primary-soft:   #4A2F19;
+  --w-primary-pale:   #3A2412;
+
+  /* ── 辅助色 ── */
+  --w-amber:        #E0A55E;
+  --w-amber-soft:   #6B4824;
+  --w-sage:         #9CB89E;
+  --w-sage-soft:    #2E3A30;
+  --w-terracotta:   #D77861;
+  --w-cream:        #5A4628;
+
+  /* ── 边界与分隔 ── */
+  --w-border:       #4A3923;
+  --w-border-soft:  #3A2C1B;
+  --w-divider:      #36281A;
+
+  /* ── 文字层级 ── */
+  --w-ink:          #F2E6D2;
+  --w-ink-mid:      #C8B492;
+  --w-ink-soft:     #998468;
+  --w-ink-mute:     #6E5C44;
+
+  /* ── 语义色（暗底友好） ── */
+  --w-safe-bg:      #2A3A2C;
+  --w-safe-text:    #A6CFA6;
+  --w-warn-bg:      #3F2E1A;
+  --w-warn-text:    #E8B878;
+  --w-risk-bg:      #3E241D;
+  --w-risk-text:    #E89484;
+
+  /* ── 阴影（夜间使用更深的黑色） ── */
+  --w-shadow-xs:    0 1px 2px rgba(0, 0, 0, 0.3);
+  --w-shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.35);
+  --w-shadow-md:    0 8px 24px rgba(0, 0, 0, 0.45);
+  --w-shadow-lg:    0 20px 50px rgba(0, 0, 0, 0.55);
+}

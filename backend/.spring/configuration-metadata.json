@@ -1,0 +1,24 @@
+{
+  "properties": [
+    {
+      "name": "jwt.secret",
+      "type": "java.lang.String",
+      "description": "JWT加密密钥"
+    },
+    {
+      "name": "jwt.expiration",
+      "type": "java.lang.Long",
+      "description": "JWT过期时间（毫秒）"
+    },
+    {
+      "name": "aliyun.bailian.api-key",
+      "type": "java.lang.String",
+      "description": "阿里云百炼API密钥"
+    },
+    {
+      "name": "aliyun.bailian.endpoint",
+      "type": "java.lang.String",
+      "description": "阿里云百炼服务端点"
+    }
+  ]
+}

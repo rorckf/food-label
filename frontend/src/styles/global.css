@@ -1,0 +1,197 @@
+/* ====================================================
+   全局基础样式 · 暖色温馨桌面端
+   字体使用 Google Fonts 的思源宋体 Noto Serif SC
+   ==================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--w-bg);
+  /* 羊皮纸颗粒背景 */
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(200, 134, 58, 0.06) 0%, transparent 42%),
+    radial-gradient(circle at 80% 80%, rgba(181, 99, 42, 0.05) 0%, transparent 42%),
+    radial-gradient(circle, rgba(181, 99, 42, 0.025) 1px, transparent 1.5px);
+  background-size: 100% 100%, 100% 100%, 22px 22px;
+  background-attachment: fixed;
+
+  font-family: var(--w-font-sans);
+  font-size: var(--w-fs-body);
+  line-height: 1.7;
+  color: var(--w-ink);
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* 标题一律使用衬线体 */
+h1, h2, h3, h4, h5, h6,
+.serif, .w-serif {
+  font-family: var(--w-font-serif);
+  font-weight: 500;
+  color: var(--w-ink);
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+}
+
+h1 { font-size: var(--w-fs-h1); font-weight: 600; }
+h2 { font-size: var(--w-fs-h2); font-weight: 600; }
+h3 { font-size: var(--w-fs-h3); font-weight: 500; }
+
+p { color: var(--w-ink-mid); }
+
+a {
+  color: var(--w-primary);
+  text-decoration: none;
+  transition: color 0.2s var(--w-ease);
+}
+a:hover { color: var(--w-primary-hover); }
+
+button {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s var(--w-ease);
+  font-family: inherit;
+  color: inherit;
+  background: none;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  outline: none;
+  color: inherit;
+}
+
+img { display: block; max-width: 100%; }
+
+/* ── 滚动条 ── */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--w-border);
+  border-radius: 10px;
+  border: 2px solid var(--w-bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--w-amber); }
+
+/* ── 选中文本 ── */
+::selection { background: var(--w-primary-soft); color: var(--w-ink); }
+
+/* ── 路由过渡 ── */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: opacity 0.35s var(--w-ease-out), transform 0.35s var(--w-ease-out);
+}
+.fade-slide-enter-from { opacity: 0; transform: translateY(12px); }
+.fade-slide-leave-to   { opacity: 0; transform: translateY(-8px); }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.35s var(--w-ease); }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* ── 滚动进入视口动画 ── */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s var(--w-ease-out), transform 0.6s var(--w-ease-out);
+}
+.scroll-reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ── 骨架屏 ── */
+@keyframes w-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.skeleton {
+  background: var(--w-bg-deep);
+  border-radius: var(--w-radius-sm);
+  animation: w-pulse 1.6s ease-in-out infinite;
+}
+
+/* ── 加载遮罩（全局） ── */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(251, 244, 230, 0.78);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* ── 夜间主题：覆盖固定颜色 ── */
+[data-theme="dark"] body {
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(224, 138, 74, 0.10) 0%, transparent 42%),
+    radial-gradient(circle at 80% 80%, rgba(200, 134, 58, 0.08) 0%, transparent 42%),
+    radial-gradient(circle, rgba(255, 220, 170, 0.04) 1px, transparent 1.5px);
+}
+[data-theme="dark"] .loading-overlay {
+  background: rgba(27, 20, 14, 0.82);
+}
+[data-theme="dark"] ::selection {
+  background: var(--w-primary-soft);
+  color: var(--w-ink);
+}
+
+/* BrandBar 顶栏：scoped 内的 rgba 用全局选择器覆盖 */
+[data-theme="dark"] .brandbar {
+  background: rgba(27, 20, 14, 0.82) !important;
+  border-bottom-color: var(--w-border-soft);
+}
+
+.loading-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--w-border-soft);
+  border-top-color: var(--w-primary);
+  border-radius: 50%;
+  animation: w-spin 0.9s linear infinite;
+}
+
+@keyframes w-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── 响应式（桌面优先，容器跟随 Sidebar） ── */
+@media (max-width: 1024px) {
+  :root { --w-sidebar-w: 72px; }
+}
+@media (max-width: 720px) {
+  :root { --w-sidebar-w: 0px; --w-brandbar-h: 56px; }
+}
+
+/* ── 旧 responsive-container 兼容 ── */
+.responsive-container {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* ── Element Plus 过渡期色调覆盖（仍被其他页面使用） ── */
+.el-button--primary {
+  background-color: var(--w-primary) !important;
+  border-color: var(--w-primary) !important;
+}
+.el-button--primary:hover {
+  background-color: var(--w-primary-hover) !important;
+  border-color: var(--w-primary-hover) !important;
+}
+.el-tag { border-radius: var(--w-radius-full) !important; }
+.el-card {
+  border-color: var(--w-border) !important;
+  border-radius: var(--w-radius-md) !important;
+}
