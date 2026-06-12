@@ -37,28 +37,21 @@ public class AdditiveService {
             "暂无详细说明，建议参考 GB 2760-2024 国家食品安全标准";
 
     /**
-     * 辅料关键词库（覆盖水/糖/油/盐/粉/液汁酱/发酵/香精香料等常见辅料）。
-     * 集中维护，方便后续扩充。匹配方式：标准化后的配料名包含其中任一关键词。
+     * 工艺性小料关键词（香精/香料/盐/发酵剂等）。
+     * 这类成分无论排在配料表第几位都属于辅料 —— 它们的添加量天然很小,
+     * 即便因厂商书写习惯排进前三,也不应被判为主料。
      */
-    private static final List<String> AUXILIARY_KEYWORDS = List.of(
-            // 水类
-            "水", "饮用水", "纯净水", "矿泉水",
-            // 糖类
-            "白砂糖", "蔗糖", "冰糖", "红糖", "麦芽糖", "果葡糖浆", "葡萄糖浆", "糖霜",
-            // 油类
-            "植物油", "菜籽油", "大豆油", "棕榈油", "花生油", "色拉油",
-            "玉米油", "葵花籽油", "食用植物油",
-            // 盐类
+    private static final List<String> MINOR_INGREDIENT_KEYWORDS = List.of(
+            // 盐类(常规零食中含量 <2%,腌制品例外但宁可保守)
             "食用盐", "食盐", "海盐",
-            // 粉类
-            "小麦粉", "玉米淀粉", "马铃薯淀粉", "全脂奶粉", "脱脂奶粉", "可可粉", "抹茶粉",
-            // 液汁酱类
-            "酱油", "食醋", "蚝油", "料酒", "番茄酱", "芝麻酱", "豆瓣酱",
-            // 发酵类
-            "酵母", "食用酵母", "高活性干酵母", "酶制剂",
-            // 其他
-            "食用香精", "食用香料"
+            // 香精香料
+            "食用香精", "食用香料", "香精", "香料",
+            // 发酵/酶
+            "酵母", "食用酵母", "高活性干酵母", "酶制剂"
     );
+
+    /** 配料表为含量降序(GB 7718),前 MAIN_RANK_LIMIT 位的非添加剂成分视为主料 */
+    private static final int MAIN_RANK_LIMIT = 3;
 
     /** 疑似添加剂关键词（用于 batchMatchAdditives 在知识库未命中时的兜底判断） */
     private static final Set<String> ADDITIVE_KEYWORDS = Set.of(
@@ -213,8 +206,9 @@ public class AdditiveService {
      * 配料三分类（模块4.1）。严格按以下优先级执行：
      *   优先级 1：标准化后名称在 additive_knowledge 命中 → 添加剂
      *   优先级 2：包含"复配"关键词 → 复合添加剂（尝试拆解括号内子项）
-     *   优先级 3：命中关键词库（水/糖/油/盐/粉/液汁酱…）→ 主料
-     *   优先级 4：兜底 → 辅料（包含天然食材，以及 rank ≤ 3 与 rank > 3 但未命中任何库的情况）
+     *   优先级 3：工艺性小料（香精/盐/酵母…）→ 辅料（与位置无关）
+     *   优先级 4：rank ≤ 3 → 主料（GB 7718 配料表按加入量递减排序，前几位即含量主体）
+     *   优先级 5：兜底 → 辅料
      *
      * 入参的 List 顺序即配料表声明顺序，rank = index + 1（"配料表按含量降序排列"）。
      */
@@ -299,8 +293,15 @@ public class AdditiveService {
     }
 
     /**
-     * 对单个原子物质名（直接来自 OCR 拆分结果）按优先级 1/3/4 分类。
+     * 对单个原子物质名（直接来自 OCR 拆分结果）分类。
      * 展示用的名称始终是 OCR 原子名（去括号、全半角统一），不会被替换为 DB 名。
+     *
+     * 分类依据(优先级从高到低):
+     *   1. 添加剂知识库命中 → 添加剂(任何位置)
+     *   2. 工艺性小料(香精/盐/酵母等) → 辅料(任何位置,即便排前三)
+     *   3. 配料表位次 rank ≤ {@link #MAIN_RANK_LIMIT} → 主料
+     *      (GB 7718 规定配料按加入量递减排序,前几位即含量主体)
+     *   4. 其余 → 辅料
      */
     private void classifyAtom(IngredientClassificationVO vo, String raw, String atom, int rank) {
         String normalized = normalize(atom);
@@ -321,8 +322,15 @@ public class AdditiveService {
             return;
         }
 
-        // 优先级 3：命中关键词库（水/糖/油/盐/粉/液汁酱…）→ 主料
-        if (matchesAuxiliary(normalized)) {
+        // 优先级 2：工艺性小料 → 辅料(与位置无关)
+        if (isMinorIngredient(normalized)) {
+            vo.getAuxiliaryIngredients().add(normalized);
+            vo.getItems().add(new ClassifiedItem(raw, normalized, "AUXILIARY", rank));
+            return;
+        }
+
+        // 优先级 3：按含量位次判主料(配料表为含量降序)
+        if (rank <= MAIN_RANK_LIMIT) {
             vo.getMainIngredients().add(normalized);
             vo.getItems().add(new ClassifiedItem(raw, normalized, "MAIN", rank));
             return;
@@ -479,8 +487,8 @@ public class AdditiveService {
         return out;
     }
 
-    private boolean matchesAuxiliary(String normalized) {
-        for (String kw : AUXILIARY_KEYWORDS) {
+    private boolean isMinorIngredient(String normalized) {
+        for (String kw : MINOR_INGREDIENT_KEYWORDS) {
             if (normalized.contains(kw)) return true;
         }
         return false;

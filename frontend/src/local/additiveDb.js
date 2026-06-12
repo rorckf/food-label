@@ -7,18 +7,18 @@ import ADDITIVES from './data/additives.json'
 
 const DEFAULT_DESC = '暂无详细说明，建议参考 GB 2760-2024 国家食品安全标准'
 
-/** 辅料关键词库(与后端 AUXILIARY_KEYWORDS 一致) */
-const AUXILIARY_KEYWORDS = [
-  '水', '饮用水', '纯净水', '矿泉水',
-  '白砂糖', '蔗糖', '冰糖', '红糖', '麦芽糖', '果葡糖浆', '葡萄糖浆', '糖霜',
-  '植物油', '菜籽油', '大豆油', '棕榈油', '花生油', '色拉油',
-  '玉米油', '葵花籽油', '食用植物油',
+/**
+ * 工艺性小料关键词(与后端 MINOR_INGREDIENT_KEYWORDS 一致)。
+ * 无论排在配料表第几位都判辅料 —— 添加量天然很小。
+ */
+const MINOR_INGREDIENT_KEYWORDS = [
   '食用盐', '食盐', '海盐',
-  '小麦粉', '玉米淀粉', '马铃薯淀粉', '全脂奶粉', '脱脂奶粉', '可可粉', '抹茶粉',
-  '酱油', '食醋', '蚝油', '料酒', '番茄酱', '芝麻酱', '豆瓣酱',
+  '食用香精', '食用香料', '香精', '香料',
   '酵母', '食用酵母', '高活性干酵母', '酶制剂',
-  '食用香精', '食用香料',
 ]
+
+/** 配料表为含量降序(GB 7718),前 3 位的非添加剂成分视为主料 */
+const MAIN_RANK_LIMIT = 3
 
 /** 疑似添加剂关键词(知识库未命中时的兜底判断) */
 const ADDITIVE_KEYWORDS = [
@@ -118,8 +118,8 @@ function looksLikeAdditive(name) {
   return ADDITIVE_KEYWORDS.some((kw) => name.includes(kw))
 }
 
-function matchesAuxiliary(normalized) {
-  return AUXILIARY_KEYWORDS.some((kw) => normalized.includes(kw))
+function isMinorIngredient(normalized) {
+  return MINOR_INGREDIENT_KEYWORDS.some((kw) => normalized.includes(kw))
 }
 
 function isCompoundAdditive(raw, normalized) {
@@ -246,6 +246,11 @@ export function classifyIngredients(ingredients) {
   return vo
 }
 
+/**
+ * 原子分类(与后端 classifyAtom 一致):
+ *   1. 添加剂库命中 → 添加剂  2. 工艺性小料 → 辅料(与位置无关)
+ *   3. rank ≤ 3 → 主料(配料表含量降序)  4. 兜底 → 辅料
+ */
 function classifyAtom(vo, raw, atom, rank) {
   const normalized = normalize(atom)
   if (!normalized) return
@@ -256,7 +261,12 @@ function classifyAtom(vo, raw, atom, rank) {
     vo.items.push({ raw, normalizedName: normalized, group: 'ADDITIVE', rank })
     return
   }
-  if (matchesAuxiliary(normalized)) {
+  if (isMinorIngredient(normalized)) {
+    vo.auxiliaryIngredients.push(normalized)
+    vo.items.push({ raw, normalizedName: normalized, group: 'AUXILIARY', rank })
+    return
+  }
+  if (rank <= MAIN_RANK_LIMIT) {
     vo.mainIngredients.push(normalized)
     vo.items.push({ raw, normalizedName: normalized, group: 'MAIN', rank })
     return

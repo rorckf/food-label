@@ -33,6 +33,14 @@ check('批量匹配命中数', Object.keys(matched).length, (n) => n === 3) // �
 const cls = classifyIngredients(['水', '白砂糖', '复配膨松剂(碳酸氢钠、焦磷酸二氢二钠)', '食用香精'])
 check('复配拆解出子项', cls.additives.map((a) => a.name), (names) => names.includes('碳酸氢钠') && names.includes('焦磷酸二氢二钠'))
 check('主料含水和糖', cls.mainIngredients, (m) => m.includes('水') && m.includes('白砂糖'))
+check('香精判辅料', cls.auxiliaryIngredients, (a) => a.includes('食用香精'))
+
+// 6b. 位次分类:饼干场景 —— 排第3的鸡蛋是主料,排第6的盐是辅料(旧逻辑会判反)
+const cls2 = classifyIngredients(['小麦粉', '精炼植物油', '鸡蛋', '全脂奶粉', '可可粉', '食用盐', '山梨酸钾'])
+check('前三位是主料', cls2.mainIngredients, (m) => m.includes('小麦粉') && m.includes('精炼植物油') && m.includes('鸡蛋'))
+check('第6位盐是辅料', cls2.auxiliaryIngredients, (a) => a.includes('食用盐') && !cls2.mainIngredients.includes('食用盐'))
+check('第4位奶粉是辅料', cls2.auxiliaryIngredients, (a) => a.includes('全脂奶粉'))
+check('山梨酸钾仍是添加剂', cls2.additives.map((x) => x.name), (n) => n.includes('山梨酸钾'))
 
 // 7. 健康评分(高糖高钠饮料 + 3 添加剂:100-8-8-9=75? energy 2000/8400=23%不超,carb 90/300=30%边界不超…构造明确超标)
 const score = calcHealthScore({ energy: 3000, fat: 25, carbohydrate: 95, sodium: 700 }, 3)
