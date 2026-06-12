@@ -38,6 +38,10 @@
           </div>
         </div>
 
+        <p v-if="!imageUrl" class="demo-line">
+          手头没有标签照片?<a class="demo-line__link" @click.stop="openDemo">看一份示例报告 →</a>
+        </p>
+
         <div v-else class="preview">
           <div class="preview__frame">
             <img :src="imageUrl" :alt="fileName" />
@@ -58,6 +62,48 @@
       </div>
     </section>
 
+    <!-- ── 最近扫描 ── -->
+    <section v-if="recentScans.length" class="home-sec">
+      <div class="home-sec__head">
+        <h2 class="home-sec__title">最近扫描</h2>
+        <router-link to="/history" class="home-sec__more">全部 ›</router-link>
+      </div>
+      <div class="scan-list">
+        <button
+          v-for="r in recentScans"
+          :key="r.id"
+          class="scan-row"
+          @click="$router.push(`/result/${r.id}`)"
+        >
+          <img v-if="r.imageUrl" :src="r.imageUrl" class="scan-row__thumb" alt="" />
+          <div v-else class="scan-row__thumb scan-row__thumb--empty"><ImageIcon :size="16" /></div>
+          <div class="scan-row__body">
+            <span class="scan-row__name">{{ r.productName || '未命名产品' }}</span>
+            <span class="scan-row__meta">{{ r.category || '—' }} · {{ shortTime(r.createTime) }}</span>
+          </div>
+          <span class="score-chip" :class="scoreClass(r.healthScore)">{{ r.healthScore ?? '—' }}</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ── 为你推荐 ── -->
+    <section v-if="recommends.length" class="home-sec">
+      <div class="home-sec__head">
+        <h2 class="home-sec__title">为你推荐</h2>
+        <router-link to="/recommend" class="home-sec__more">更多 ›</router-link>
+      </div>
+      <div class="rec-scroll">
+        <div v-for="it in recommends" :key="it.id" class="rec-card">
+          <div class="rec-card__top">
+            <span class="score-chip" :class="scoreClass(it.healthScore)">{{ it.healthScore ?? '—' }}</span>
+            <span class="rec-card__cat">{{ it.category }}</span>
+          </div>
+          <p class="rec-card__name">{{ it.name }}</p>
+          <p class="rec-card__reason">{{ it.reasons?.[0] || '' }}</p>
+        </div>
+      </div>
+    </section>
+
     <!-- ── 加载遮罩 ── -->
     <transition name="fade">
       <div v-if="uploading" class="scan-overlay">
@@ -72,14 +118,49 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { UploadCloud, Image as ImageIcon, RotateCcw, Sparkles } from 'lucide-vue-next'
 import WButton from '@/components/ui/WButton.vue'
-import { recognizeAPI } from '@/utils/api'
+import { recognizeAPI, historyAPI, recommendAPI } from '@/utils/api'
 import { formatFileSize } from '@/utils/parser'
+import { seedDemoResult } from '@/data/demoResult'
 
 const router = useRouter()
+
+/* ── 登录后首屏信息流:最近扫描 + 为你推荐 ── */
+const recentScans = ref([])
+const recommends = ref([])
+
+const loadFeed = async () => {
+  try {
+    const h = await historyAPI.getHistoryList()
+    if (h.code === 200) recentScans.value = (h.data || []).slice(0, 4)
+  } catch { /* 静默 */ }
+  try {
+    const r = await recommendAPI.list(6)
+    if (r.code === 200) recommends.value = r.data?.items || []
+  } catch { /* 静默 */ }
+}
+
+const openDemo = () => router.push(seedDemoResult())
+
+const scoreClass = (s) => {
+  if (s == null) return 'score-chip--na'
+  if (s >= 85) return 'score-chip--good'
+  if (s >= 70) return 'score-chip--fair'
+  if (s >= 50) return 'score-chip--mid'
+  return 'score-chip--bad'
+}
+
+const shortTime = (t) => {
+  if (!t) return ''
+  const s = String(t)
+  return s.length >= 16 ? s.slice(5, 16) : s
+}
+
+onMounted(loadFeed)
 
 const fileInput = ref(null)
 const file = ref(null)
@@ -143,7 +224,7 @@ const handleUpload = async () => {
     router.push(`/result/${resultId}`)
   } catch (err) {
     console.error(err)
-    alert(err.response?.data?.message || '识别失败')
+    ElMessage.error(err.response?.data?.message || '识别失败,请稍后重试')
   } finally {
     uploading.value = false
   }
@@ -369,5 +450,146 @@ const handleUpload = async () => {
   font-size: 13px;
   color: var(--w-ink-mid);
   letter-spacing: 0.06em;
+}
+
+/* ── 示例报告入口 ── */
+.demo-line {
+  text-align: center;
+  font-size: 13px;
+  color: var(--w-ink-mid);
+  margin: 14px 0 0;
+  letter-spacing: 0.04em;
+}
+.demo-line__link {
+  color: var(--w-primary, #2A9D8F);
+  cursor: pointer;
+  margin-left: 4px;
+}
+.demo-line__link:hover { text-decoration: underline; }
+
+/* ── 登录后信息流(最近扫描/为你推荐) ── */
+.home-sec {
+  max-width: 720px;
+  margin: 28px auto 0;
+}
+.home-sec__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.home-sec__title {
+  font-family: var(--w-font-serif);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--w-ink);
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+.home-sec__more {
+  font-size: 12.5px;
+  color: var(--w-ink-mid);
+  text-decoration: none;
+}
+.home-sec__more:hover { color: var(--w-primary, #2A9D8F); }
+
+.scan-list { display: flex; flex-direction: column; gap: 8px; }
+.scan-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: var(--w-surface);
+  border: 1px solid var(--w-border-soft);
+  border-radius: 14px;
+  padding: 10px 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.scan-row:hover { border-color: var(--w-primary, #2A9D8F); }
+.scan-row:active { transform: scale(0.99); }
+.scan-row__thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.scan-row__thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--w-primary-pale, #f4ecdc);
+  color: var(--w-ink-mid);
+}
+.scan-row__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.scan-row__name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--w-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scan-row__meta { font-size: 11.5px; color: var(--w-ink-mid); }
+
+.score-chip {
+  flex-shrink: 0;
+  min-width: 34px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 0 6px;
+}
+.score-chip--good { background: #DCFCE7; color: #15803D; }
+.score-chip--fair { background: #ECFCCB; color: #4D7C0F; }
+.score-chip--mid  { background: #FEF3C7; color: #B45309; }
+.score-chip--bad  { background: #FEE2E2; color: #B91C1C; }
+.score-chip--na   { background: #F1F5F9; color: #64748B; }
+
+.rec-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.rec-scroll::-webkit-scrollbar { display: none; }
+.rec-card {
+  flex: 0 0 160px;
+  background: var(--w-surface);
+  border: 1px solid var(--w-border-soft);
+  border-radius: 14px;
+  padding: 12px;
+}
+.rec-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.rec-card__cat { font-size: 11px; color: var(--w-ink-mid); }
+.rec-card__name {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--w-ink);
+  margin: 0 0 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.rec-card__reason {
+  font-size: 11px;
+  color: #4D7C0F;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
