@@ -62,25 +62,6 @@
         </div>
       </section>
 
-      <!-- 3. 过敏原 -->
-      <section class="parch-card">
-        <header class="parch-card__head">
-          <Wheat :size="16" class="parch-card__icon" />
-          <h3 class="parch-card__title">过敏原</h3>
-          <span class="parch-card__hint">多选 · 无则点"无"</span>
-        </header>
-        <div class="opts opts--wrap">
-          <button
-            v-for="opt in ALLERGEN_OPTIONS"
-            :key="opt"
-            type="button"
-            class="opt opt--sm"
-            :class="{ 'opt--on': allergens.includes(opt) }"
-            @click="toggleAllergen(opt)"
-          >{{ opt }}</button>
-        </div>
-      </section>
-
       <button class="primary-btn" :disabled="!canSubmit || saving" @click="submit">
         <Loader v-if="saving" :size="15" class="spin" />
         <Check v-else :size="15" />
@@ -94,7 +75,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Target, Activity, Wheat, Check, Loader, LogOut } from 'lucide-vue-next'
+import { Target, Activity, Check, Loader, LogOut } from 'lucide-vue-next'
 import { userAPI } from '@/utils/api'
 import { useUserStore } from '@/stores/userStore'
 
@@ -116,11 +97,9 @@ const GOAL_OPTIONS = [
   { value: '通用', label: '通用', emoji: '🌿' },
 ]
 const DISEASE_OPTIONS = ['高血压', '糖尿病', '高血脂', '痛风', '无']
-const ALLERGEN_OPTIONS = ['麸质', '蛋', '乳', '大豆', '花生', '坚果', '甲壳类', '鱼', '芝麻', '无']
 
 const goal = ref('')
 const diseases = ref([])
-const allergens = ref([])
 
 /** "无"与其他互斥的多选切换 */
 const toggleExclusive = (list, val, none = '无') => {
@@ -135,10 +114,9 @@ const toggleExclusive = (list, val, none = '无') => {
       : [...without, val]
 }
 const toggleDisease = (v) => toggleExclusive(diseases, v)
-const toggleAllergen = (v) => toggleExclusive(allergens, v)
 
 const canSubmit = computed(() =>
-    goal.value && diseases.value.length > 0 && allergens.value.length > 0
+    goal.value && diseases.value.length > 0
 )
 
 const submit = async () => {
@@ -149,7 +127,6 @@ const submit = async () => {
       healthGoal: goal.value,
       // "无"被选中时存空字符串，与后端"空表示无"约定一致
       chronicDiseases: diseases.value.includes('无') ? '' : diseases.value.join(','),
-      allergens: allergens.value.includes('无') ? '' : allergens.value.join(','),
     }
     const res = await userAPI.updateHealthProfile(payload)
     if (res.code !== 200) {

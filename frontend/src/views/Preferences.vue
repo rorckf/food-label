@@ -2,41 +2,8 @@
   <div class="prefs-page">
     <header class="prefs-hero">
       <h1 class="prefs-hero__title">个人偏好</h1>
-      <p class="prefs-hero__sub">设置过敏原后，识别结果中的相关配料会被红框标注。</p>
+      <p class="prefs-hero__sub">配置你自己的大模型 Key，识别额度自己掌控。</p>
     </header>
-
-    <section class="parch-card">
-      <header class="parch-card__head">
-        <span class="parch-card__ornament">❖</span>
-        <h3 class="parch-card__title">过敏原 / 致敏物质</h3>
-      </header>
-      <div class="parch-card__body">
-        <div v-if="allergens.length" class="tag-list">
-          <span v-for="t in allergens" :key="t" class="tag tag--warn">⚠ {{ t }}</span>
-        </div>
-        <p v-else class="muted">尚未设置任何过敏原。</p>
-
-        <div class="actions">
-          <button class="link-btn" @click="openDialog">
-            <Pencil :size="14" /> {{ allergens.length ? '编辑' : '添加' }}过敏原
-          </button>
-          <button v-if="allergens.length" class="link-btn link-btn--mute" @click="clearAll">
-            清空
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <HealthTagEdit
-      ref="dialogRef"
-      v-model="allergens"
-      title="选择过敏原"
-      :options="ALLERGEN_OPTIONS"
-      :show-search="false"
-      :allow-custom="false"
-      :max-selections="9"
-      @confirm="persist"
-    />
 
     <section class="parch-card">
       <header class="parch-card__head">
@@ -125,44 +92,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Pencil, Eye, EyeOff, Save, ExternalLink, ClipboardPaste, PlugZap, Loader } from 'lucide-vue-next'
+import { Eye, EyeOff, Save, ExternalLink, ClipboardPaste, PlugZap, Loader } from 'lucide-vue-next'
 import { ElMessage } from 'element-plus'
-import HealthTagEdit from '@/components/profile/HealthTagEdit.vue'
 import { getLlmConfig, saveLlmConfig, clearLlmConfig, LLM_DEFAULTS } from '@/utils/api'
 import { detectKeyFromClipboard, testConnection, KEY_CONSOLE_URL } from '@/local/byok'
-
-const STORAGE_KEY = 'userAllergens'
-
-/** 与后端 AllergenService 的 9 大类对齐 */
-const ALLERGEN_OPTIONS = [
-  { label: '麸质（小麦/大麦/燕麦/黑麦）', value: '麸质' },
-  { label: '蛋类',     value: '蛋' },
-  { label: '乳类',     value: '乳' },
-  { label: '大豆',     value: '大豆' },
-  { label: '花生',     value: '花生' },
-  { label: '坚果（树坚果）', value: '坚果' },
-  { label: '甲壳类（虾/蟹）', value: '甲壳类' },
-  { label: '鱼类',     value: '鱼' },
-  { label: '芝麻',     value: '芝麻' },
-]
-
-const allergens = ref([])
-const dialogRef = ref(null)
-
-const load = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    allergens.value = raw ? JSON.parse(raw) : []
-  } catch { allergens.value = [] }
-}
-
-const persist = (next) => {
-  allergens.value = Array.isArray(next) ? next : []
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(allergens.value))
-}
-
-const openDialog = () => dialogRef.value?.open()
-const clearAll = () => persist([])
 
 // ───── 大模型 API 配置 ─────
 const llm = ref({ apiKey: '', model: '', endpoint: '' })
@@ -230,10 +163,7 @@ const testKey = async () => {
   }
 }
 
-onMounted(() => {
-  load()
-  loadLlm()
-})
+onMounted(loadLlm)
 </script>
 
 <style scoped>
@@ -308,13 +238,6 @@ onMounted(() => {
 }
 .parch-card__body { position: relative; z-index: 1; }
 
-.tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--w-space-3); }
-.tag {
-  display: inline-flex; align-items: center;
-  font-size: 12.5px; padding: 4px 12px;
-  border-radius: var(--w-radius-full); letter-spacing: 0.05em;
-}
-.tag--warn { background: var(--w-warn-bg, #FFF4E0); color: var(--w-warn-text, #B5632A); }
 .muted { color: var(--w-ink-mute); font-size: 13px; margin: 0 0 var(--w-space-3); }
 
 .actions { display: flex; gap: var(--w-space-4); align-items: center; }

@@ -12,7 +12,7 @@
     </header>
 
     <!-- 用户画像摘要 chips -->
-    <div v-if="profile && (profile.healthGoal || profile.chronicDiseases || profile.allergens)"
+    <div v-if="profile && (profile.healthGoal || profile.chronicDiseases)"
          class="profile-chips">
       <button
         class="rec-refresh"
@@ -29,10 +29,7 @@
       <span v-if="profile.chronicDiseases" class="p-chip p-chip--avoid">
         <Activity :size="13" /> 禁忌 · {{ profile.chronicDiseases }}
       </span>
-      <span v-if="profile.allergens" class="p-chip p-chip--allergen">
-        <Wheat :size="13" /> 过敏 · {{ profile.allergens }}
-      </span>
-      <router-link to="/preferences" class="p-chip p-chip--edit">
+      <router-link to="/onboarding" class="p-chip p-chip--edit">
         <Pencil :size="12" /> 修改
       </router-link>
     </div>
@@ -103,7 +100,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { Target, Activity, Wheat, Pencil, Loader, RefreshCw,
+import { Target, Activity, Pencil, Loader, RefreshCw,
          CupSoda, Cookie, Milk, UtensilsCrossed } from 'lucide-vue-next'
 import { recommendAPI } from '@/utils/api'
 
@@ -115,7 +112,6 @@ const profileSummary = computed(() => {
   if (!profile.value || !profile.value.healthGoal) return ''
   const parts = [`基于你的${profile.value.healthGoal}目标`]
   if (profile.value.chronicDiseases) parts.push(`${profile.value.chronicDiseases.split(',').length} 项疾病禁忌`)
-  if (profile.value.allergens) parts.push(`${profile.value.allergens.split(',').length} 项过敏原`)
   return parts.join(' · ')
 })
 
@@ -336,7 +332,6 @@ onMounted(load)
 }
 .p-chip--goal     { color: var(--w-primary); border-color: var(--w-primary-soft); }
 .p-chip--avoid    { color: var(--w-terracotta, #b5632a); border-color: rgba(181, 99, 42, 0.3); }
-.p-chip--allergen { color: var(--w-amber, #c0883a); border-color: rgba(192, 136, 58, 0.3); }
 .p-chip--edit     { color: var(--w-ink-soft); cursor: pointer; }
 .p-chip--edit:hover { color: var(--w-primary); border-color: var(--w-primary-soft); }
 

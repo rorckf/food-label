@@ -80,7 +80,7 @@ export const userAPI = {
   getHealthProfile: async () => {
     if (isLocalMode()) {
       const m = await import('@/local/profile')
-      return ok(m.getLocalProfile() || { healthGoal: null, chronicDiseases: '', allergens: '' })
+      return ok(m.getLocalProfile() || { healthGoal: null, chronicDiseases: '' })
     }
     return api.get('/user/health-profile')
   },

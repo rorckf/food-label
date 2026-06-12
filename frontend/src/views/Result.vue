@@ -16,15 +16,6 @@
       >
         <Clock3 :size="13" /> {{ shelfLife.message }}
       </span>
-      <!-- 用户过敏原命中告警 -->
-      <button
-        v-if="userAllergenHits.length"
-        class="status-chip status-chip--danger status-chip--btn"
-        :title="`点击修改你的过敏原偏好`"
-        @click="navigateToPreferences"
-      >
-        <ShieldAlert :size="13" /> 含 {{ userAllergenHits.join('、') }}
-      </button>
       <span class="action-bar__spacer"></span>
       <button
         class="fav-btn"
@@ -181,35 +172,20 @@
               </li>
             </ul>
 
-            <!-- 致敏原（结构化：明确含 / 可能含；命中用户偏好用红框） -->
+            <!-- 致敏原（结构化：明确含 / 同线加工，从标签提取） -->
             <div v-if="hasAllergenInfo" class="allergen-block">
               <div v-if="allergens.contains.length" class="allergen-line">
                 <span class="chip chip--warn">⚠ 含</span>
                 <span class="allergen-tags">
-                  <span
-                    v-for="t in allergens.contains"
-                    :key="'c'+t"
-                    class="atag"
-                    :class="{ 'atag--hit': userAllergenHits.includes(t) }"
-                  >{{ t }}</span>
+                  <span v-for="t in allergens.contains" :key="'c'+t" class="atag">{{ t }}</span>
                 </span>
               </div>
               <div v-if="allergens.mayContain.length" class="allergen-line">
                 <span class="chip chip--mute">同线加工</span>
                 <span class="allergen-tags">
-                  <span
-                    v-for="t in allergens.mayContain"
-                    :key="'m'+t"
-                    class="atag atag--mute"
-                    :class="{ 'atag--hit': userMayContainHits.includes(t) }"
-                  >{{ t }}</span>
+                  <span v-for="t in allergens.mayContain" :key="'m'+t" class="atag atag--mute">{{ t }}</span>
                 </span>
               </div>
-              <button
-                v-if="!userAllergens.length"
-                class="allergen-cta"
-                @click="navigateToPreferences"
-              >设置我的过敏原 →</button>
             </div>
 
             <div class="analysis-link">
@@ -385,7 +361,7 @@
 import { ref, reactive, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Home, List, Star, ChevronLeft, ChevronRight, Info, ShieldAlert, Clock3, Trash2, Send, Sparkles } from 'lucide-vue-next'
+import { Home, List, Star, ChevronLeft, ChevronRight, Info, Clock3, Trash2, Send, Sparkles } from 'lucide-vue-next'
 import * as echarts from 'echarts'
 import { additiveAPI, historyAPI, recognizeAPI } from '@/utils/api'
 import AdditiveDetailDialog from '@/components/dialogs/AdditiveDetailDialog.vue'
@@ -600,13 +576,8 @@ watch(servingWeight, (w) => {
 const goToUpload = () => router.push('/')
 const navigateToIngredientsAnalysis = () => router.push(`/ingredients-analysis/${resultId}`)
 const navigateToProductDetails = () => router.push(`/product-details/${resultId}`)
-const navigateToPreferences = () => router.push('/preferences')
 
 /* ── 保质期 / 致敏原 / 标准码品类（后端 #1/#3/#5） ── */
-const userAllergens = ref([])
-try {
-  userAllergens.value = JSON.parse(localStorage.getItem('userAllergens') || '[]')
-} catch { userAllergens.value = [] }
 
 const shelfLife = computed(() => result.value?.shelfLifeStatus || null)
 const shelfLifeLevel = computed(() => {
@@ -623,14 +594,6 @@ const allergens = computed(() => {
     contains:   Array.isArray(a.contains)   ? a.contains   : [],
     mayContain: Array.isArray(a.mayContain) ? a.mayContain : [],
   }
-})
-const userAllergenHits = computed(() => {
-  const set = new Set(userAllergens.value)
-  return allergens.value.contains.filter(t => set.has(t))
-})
-const userMayContainHits = computed(() => {
-  const set = new Set(userAllergens.value)
-  return allergens.value.mayContain.filter(t => set.has(t))
 })
 const hasAllergenInfo = computed(() =>
   allergens.value.contains.length > 0 || allergens.value.mayContain.length > 0
@@ -1062,8 +1025,6 @@ onMounted(async () => {
   border: 1px solid transparent;
   white-space: nowrap;
 }
-.status-chip--btn { cursor: pointer; transition: filter 0.18s var(--w-ease); }
-.status-chip--btn:hover { filter: brightness(1.05); }
 .status-chip--safe    { background: rgba(127, 159, 127, 0.15); color: var(--w-sage, #5b8d5b); border-color: rgba(127, 159, 127, 0.35); }
 .status-chip--warn    { background: rgba(200, 134, 58, 0.15); color: var(--w-amber);          border-color: rgba(200, 134, 58, 0.40); }
 .status-chip--danger  { background: rgba(193, 86, 55, 0.13);  color: var(--w-terracotta, #c15637); border-color: rgba(193, 86, 55, 0.40); }
@@ -1109,21 +1070,7 @@ onMounted(async () => {
   color: var(--w-ink);
 }
 .atag--mute { color: var(--w-ink-mid); background: rgba(0,0,0,0.025); }
-.atag--hit {
-  background: rgba(193, 86, 55, 0.18);
-  color: var(--w-terracotta, #c15637);
-  border: 1px solid var(--w-terracotta, #c15637);
-  font-weight: 600;
-}
 .chip--mute { background: rgba(0,0,0,0.06); color: var(--w-ink-mid); }
-.allergen-cta {
-  align-self: flex-start;
-  margin-top: 2px;
-  background: transparent; border: 0; cursor: pointer;
-  color: var(--w-primary); font-size: 11.5px;
-  letter-spacing: 0.04em;
-}
-.allergen-cta:hover { text-decoration: underline; }
 
 /* 截图区：包含产品标题 + 全部解读卡片 */
 .share-frame {
