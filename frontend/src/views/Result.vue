@@ -338,6 +338,43 @@
           </div>
         </article>
 
+        <!-- 标签体检卡（打假模式：GB 7718/28050 合规核查） -->
+        <article v-if="labelCheck" class="parch-card inspect-card">
+          <header class="parch-card__head">
+            <span class="parch-card__ornament">❖</span>
+            <h3 class="parch-card__title">标签体检</h3>
+            <span class="inspect-summary">
+              <em v-if="labelCheck.summary.fail" class="inspect-chip inspect-chip--fail">✗ {{ labelCheck.summary.fail }}</em>
+              <em v-if="labelCheck.summary.warn" class="inspect-chip inspect-chip--warn">⚠ {{ labelCheck.summary.warn }}</em>
+              <em class="inspect-chip inspect-chip--pass">✓ {{ labelCheck.summary.pass }}</em>
+            </span>
+          </header>
+          <div class="parch-card__body">
+            <div v-for="g in labelCheck.groups" :key="g.key" class="health-block">
+              <h4 class="block-title">{{ g.title }}</h4>
+              <ul class="inspect-list">
+                <li
+                  v-for="(it, i) in g.items.filter((x) => x.level !== 'pass')"
+                  :key="g.key + i"
+                  class="inspect-row"
+                  :class="`inspect-row--${it.level}`"
+                >
+                  <span class="inspect-badge">{{ { fail: '✗', warn: '⚠', info: 'ℹ' }[it.level] }}</span>
+                  <div class="inspect-content">
+                    <span class="inspect-title">{{ it.title }}</span>
+                    <p v-if="it.detail" class="inspect-detail">{{ it.detail }}</p>
+                    <span v-if="it.basis" class="inspect-basis">依据：{{ it.basis }}</span>
+                  </div>
+                </li>
+              </ul>
+              <p v-if="g.items.some((x) => x.level === 'pass')" class="inspect-passline">
+                ✓ {{ g.items.filter((x) => x.level === 'pass').map((x) => x.title).join('、') }}
+              </p>
+            </div>
+            <p class="inspect-note">* 体检基于照片可识别的内容：拍摄未覆盖的项目会显示"未识别到"，请以实物标签为准。结果仅供消费参考。</p>
+          </div>
+        </article>
+
       </div>
     </main>
     </div>
@@ -352,6 +389,7 @@ import { Home, List, Star, ChevronLeft, ChevronRight, Info, ShieldAlert, Clock3,
 import * as echarts from 'echarts'
 import { additiveAPI, historyAPI, recognizeAPI } from '@/utils/api'
 import AdditiveDetailDialog from '@/components/dialogs/AdditiveDetailDialog.vue'
+import { runLabelCheck } from '@/local/labelCheck'
 import ShareActions from '@/components/ShareActions.vue'
 import ShareCardModal from '@/components/ShareCardModal.vue'
 
@@ -360,6 +398,8 @@ const route = useRoute()
 
 const resultId = route.params.id
 const result = ref(null)
+// 标签体检（打假模式）：纯前端规则引擎，对识别结果做 GB 7718/28050 合规核查
+const labelCheck = computed(() => (result.value ? runLabelCheck(result.value) : null))
 const isSqueezing = ref(false)
 const shareTargetEl = ref(null)
 const radarChartEl = ref(null)
@@ -1234,6 +1274,38 @@ onMounted(async () => {
   line-height: 1.55;
 }
 .risk-icon { color: var(--w-amber); flex-shrink: 0; font-weight: 600; }
+
+/* ── 标签体检卡（打假模式）── */
+.inspect-summary { margin-left: auto; display: inline-flex; gap: 6px; }
+.inspect-chip {
+  font-style: normal; font-size: 12px; font-weight: 600;
+  padding: 1px 8px; border-radius: 999px;
+}
+.inspect-chip--fail { background: rgba(193, 86, 55, 0.13); color: var(--w-terracotta, #c15637); }
+.inspect-chip--warn { background: rgba(200, 134, 58, 0.15); color: var(--w-amber, #B5632A); }
+.inspect-chip--pass { background: rgba(127, 159, 127, 0.15); color: var(--w-sage, #5b8d5b); }
+
+.inspect-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.inspect-row {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px 12px; border-radius: 8px;
+}
+.inspect-row--fail { background: rgba(193, 86, 55, 0.07); border-left: 3px solid var(--w-terracotta, #c15637); }
+.inspect-row--warn { background: var(--w-warn-bg, #FFF4E0); border-left: 3px solid var(--w-warn-text, #B5632A); }
+.inspect-row--info { background: rgba(0, 0, 0, 0.025); border-left: 3px solid var(--w-border-soft, #d9d2c0); }
+.inspect-badge { flex-shrink: 0; font-weight: 700; line-height: 1.6; }
+.inspect-row--fail .inspect-badge { color: var(--w-terracotta, #c15637); }
+.inspect-row--warn .inspect-badge { color: var(--w-amber, #B5632A); }
+.inspect-row--info .inspect-badge { color: var(--w-ink-mute); }
+.inspect-content { min-width: 0; }
+.inspect-title { display: block; color: var(--w-ink); font-weight: 600; font-size: 13.5px; line-height: 1.6; }
+.inspect-detail { margin: 3px 0 0; color: var(--w-ink-mid); font-size: 12.5px; line-height: 1.7; }
+.inspect-basis { display: block; margin-top: 3px; font-size: 11.5px; color: var(--w-ink-mute); }
+.inspect-passline {
+  margin: 8px 0 0; font-size: 12px; line-height: 1.8;
+  color: var(--w-sage, #5b8d5b);
+}
+.inspect-note { margin: var(--w-space-3) 0 0; font-size: 11.5px; color: var(--w-ink-mute); line-height: 1.7; }
 .risk-text { flex: 1; }
 
 @media (max-width: 600px) {
