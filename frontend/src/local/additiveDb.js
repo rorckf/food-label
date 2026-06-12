@@ -50,6 +50,26 @@ const INS_CODE_MAP = {
 }
 const INS_CODE_PATTERN = /^\d{2,4}[a-z]{0,3}$/
 
+/**
+ * 从 289 条数据的 ins 字段自动构建全量 INS → 条目索引(模块加载时建一次)。
+ * 数据形如 "210,211" / "160a(i),160a(iii)" / "501(ii)";
+ * 同时登记去括号变体("160a(i)" 与 "160a"),手工表优先、先到先得。
+ */
+const INS_AUTO_INDEX = (() => {
+  const idx = new Map()
+  for (const a of ADDITIVES) {
+    if (!a.ins || a.ins === '—') continue
+    for (let token of a.ins.split(',')) {
+      token = token.trim().toLowerCase().replace(/\s+/g, '')
+      if (!token || token === '—') continue
+      if (!idx.has(token)) idx.set(token, a)
+      const bare = token.replace(/[（(][^）)]*[）)]/g, '')
+      if (bare && bare !== token && !idx.has(bare)) idx.set(bare, a)
+    }
+  }
+  return idx
+})()
+
 // ─── 基础工具 ───────────────────────────────────────────────
 
 function toHalfWidth(s) {
@@ -78,9 +98,15 @@ export function normalize(raw) {
   return toHalfWidth(iterativelyStripBrackets(String(raw))).trim()
 }
 
+/** INS 数字代码解析:支持 "330" / "E330" / "e160a" 形态;手工表优先,自动索引兜底 */
 function resolveInsCode(name) {
-  const key = name.trim().toLowerCase()
-  if (INS_CODE_PATTERN.test(key) && INS_CODE_MAP[key]) return INS_CODE_MAP[key]
+  let key = name.trim().toLowerCase()
+  // 欧盟 E 编码前缀(E330 = INS 330)
+  if (/^e\d/.test(key)) key = key.slice(1)
+  if (!INS_CODE_PATTERN.test(key)) return name
+  if (INS_CODE_MAP[key]) return INS_CODE_MAP[key]
+  const auto = INS_AUTO_INDEX.get(key)
+  if (auto) return auto.name
   return name
 }
 

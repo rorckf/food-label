@@ -331,15 +331,26 @@ public class RecognizeService {
         return Math.round(v * 100.0) / 100.0;
     }
 
-    /** 从净含量字符串中提取克数，例如 "250ml"→250, "500g"→500 */
+    /**
+     * 从净含量字符串中提取总克数。
+     *   "250ml"→250, "500g"→500;
+     *   多件装 "100g×5"→500、"2×100g"→200(取前两个数字相乘)。
+     * 旧实现把所有数字字符拼接("100g×5"→1005),已修复。
+     */
     private double parseGrams(String netContent) {
         if (netContent == null || netContent.isBlank()) return 100.0;
-        try {
-            String digits = netContent.replaceAll("[^0-9.]", "");
-            double val = Double.parseDouble(digits);
-            return val > 0 ? val : 100.0;
-        } catch (NumberFormatException e) {
-            return 100.0;
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("\\d+(?:\\.\\d+)?").matcher(netContent);
+        java.util.List<Double> nums = new java.util.ArrayList<>();
+        while (m.find()) {
+            double v = Double.parseDouble(m.group());
+            if (v > 0) nums.add(v);
         }
+        if (nums.isEmpty()) return 100.0;
+        // 含乘号(×/x/*)的多件装:前两个数字相乘
+        if (netContent.matches(".*[×xX*].*") && nums.size() >= 2) {
+            return nums.get(0) * nums.get(1);
+        }
+        return nums.get(0);
     }
 }

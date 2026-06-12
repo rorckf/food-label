@@ -49,13 +49,13 @@ export class NotFoodLabelError extends Error {
 }
 
 /**
- * 单机识别入口。
- * @param {File|Blob} file 用户拍摄/选择的图片
+ * 单机识别入口(支持同一包装多张照片综合识别)。
+ * @param {File|Blob|Array<File|Blob>} fileOrFiles 用户拍摄/选择的图片,单张或多张(最多3张)
  * @returns {object} RecognitionResultVO 结构(含 id,已存入本地历史)
  * @throws {NotFoodLabelError} 图片不是食品标签
  * @throws {Error} Key 未配置 / 网络与鉴权错误
  */
-export async function localRecognize(file) {
+export async function localRecognize(fileOrFiles) {
   const cfg = effectiveLlmConfig()
   if (!cfg.apiKey) {
     const e = new Error('尚未配置 API Key')
@@ -63,11 +63,15 @@ export async function localRecognize(file) {
     throw e
   }
 
-  // 1. 压缩(本地存储用 dataUrl,识别用 base64)
-  const { dataUrl, base64 } = await compressImage(file)
+  const files = (Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles]).slice(0, 3)
 
-  // 2. BYOK 直连识别(提示词 v2,自带 isFoodLabel 防御与每100g换算)
-  const aiJson = await recognizeLabel(base64, cfg)
+  // 1. 逐张压缩(本地存储用第一张的 dataUrl,识别用全部 base64)
+  const compressed = await Promise.all(files.map((f) => compressImage(f)))
+  const dataUrl = compressed[0].dataUrl
+  const base64List = compressed.map((c) => c.base64)
+
+  // 2. BYOK 直连识别(提示词 v2,自带 isFoodLabel 防御与每100g换算;多图综合提取)
+  const aiJson = await recognizeLabel(base64List, cfg)
   if (aiJson.isFoodLabel === false) {
     throw new NotFoodLabelError(aiJson.reason)
   }

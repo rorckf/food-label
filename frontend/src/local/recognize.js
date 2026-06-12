@@ -13,9 +13,10 @@
  */
 
 export const RECOGNIZE_PROMPT_V2 = `你是一个食品标签识别助手。请分析图片,严格按照以下 JSON 格式返回,不要包含任何额外文字或代码块标记。
+可能提供同一商品包装的多张照片(如正面、配料表、营养成分表),请综合全部照片提取信息;若多张照片信息冲突,以拍得更清晰的为准。
 
-第一步:判断图片是否为食品包装/食品标签照片。
-若不是(如人物、风景、截图、动物等),只返回:{"isFoodLabel": false, "reason": "一句话说明图片内容"}
+第一步:判断图片是否为食品包装/食品标签照片(多张时只要任意一张是即可)。
+若都不是(如人物、风景、截图、动物等),只返回:{"isFoodLabel": false, "reason": "一句话说明图片内容"}
 
 若是食品标签,返回:
 {
@@ -118,13 +119,14 @@ function parseJsonBlock(text) {
 // ─── 对外 API ────────────────────────────────────────────────
 
 /**
- * 识别食品标签图片。
- * @param {string} base64Image  不带 data: 前缀的 base64 图片数据
+ * 识别食品标签图片(支持同一包装多张照片综合识别)。
+ * @param {string|string[]} base64Images  不带 data: 前缀的 base64 图片数据,单张或多张
  * @param {{apiKey, model, endpoint}} cfg  生效的 LLM 配置
  * @returns {object} 解析后的识别 JSON;非标签图片时 { isFoodLabel:false, reason }
  * @throws 网络/鉴权错误向上抛,由调用方提示
  */
-export async function recognizeLabel(base64Image, cfg) {
+export async function recognizeLabel(base64Images, cfg) {
+  const images = Array.isArray(base64Images) ? base64Images : [base64Images]
   const body = {
     model: cfg.model,
     input: {
@@ -133,7 +135,7 @@ export async function recognizeLabel(base64Image, cfg) {
           role: 'user',
           content: [
             { type: 'text', text: RECOGNIZE_PROMPT_V2 },
-            { type: 'image', image: 'data:image/jpeg;base64,' + base64Image },
+            ...images.map((b64) => ({ type: 'image', image: 'data:image/jpeg;base64,' + b64 })),
           ],
         },
       ],

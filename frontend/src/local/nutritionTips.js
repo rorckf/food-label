@@ -11,12 +11,20 @@ const DEVIATION_THRESHOLD = 0.2
 
 const round2 = (v) => Math.round(v * 100) / 100
 
-/** 从净含量字符串提取克数,例如 "250ml"→250, "500g"→500;失败回退 100 */
+/**
+ * 从净含量字符串提取总克数。
+ *   "250ml"→250  "500g"→500
+ *   多件装:"100g×5"→500  "2×100g"→200(取前两个数字相乘)
+ * 旧实现把所有数字字符拼接("100g×5"→1005),已修复。失败回退 100。
+ */
 export function parseGrams(netContent) {
   if (!netContent || !String(netContent).trim()) return 100
-  const digits = String(netContent).replace(/[^0-9.]/g, '')
-  const val = parseFloat(digits)
-  return val > 0 ? val : 100
+  const s = String(netContent)
+  const nums = (s.match(/\d+(?:\.\d+)?/g) || []).map(Number).filter((n) => n > 0)
+  if (!nums.length) return 100
+  // 含乘号(×/x/*)的多件装:前两个数字相乘
+  if (/[×xX*]/.test(s) && nums.length >= 2) return nums[0] * nums[1]
+  return nums[0]
 }
 
 /**

@@ -46,24 +46,6 @@
       <p class="ahome__empty-sub">配料表、添加剂、营养成分,拍一下全看懂</p>
     </section>
 
-    <!-- 为你推荐 -->
-    <section v-if="recommends.length" class="ahome__section">
-      <div class="ahome__sec-head">
-        <h2 class="ahome__sec-title">为你推荐</h2>
-        <button class="ahome__more" @click="$router.push('/recommend')">更多 <ChevronRight :size="13" /></button>
-      </div>
-      <div class="rec-scroll">
-        <div v-for="it in recommends" :key="it.id" class="rec-card">
-          <div class="rec-card__top">
-            <span class="score-chip" :class="scoreClass(it.healthScore)">{{ it.healthScore ?? '—' }}</span>
-            <span class="rec-card__cat">{{ it.category }}</span>
-          </div>
-          <p class="rec-card__name">{{ it.name }}</p>
-          <p class="rec-card__reason">{{ it.reasons?.[0] || '' }}</p>
-        </div>
-      </div>
-    </section>
-
     <!-- 拍照 FAB -->
     <input
       ref="fileInput"
@@ -78,6 +60,32 @@
       <span>拍标签</span>
     </button>
 
+    <!-- 多图确认面板:同一包装可补拍配料表/营养成分表 -->
+    <Transition name="fade">
+      <div v-if="shots.length && !scanning" class="shot-sheet" @click.self="clearShots">
+        <div class="shot-sheet__panel">
+          <p class="shot-sheet__title">已拍 {{ shots.length }}/3 张</p>
+          <p class="shot-sheet__hint">一张拍不全?可补拍配料表、营养成分表(同一包装)</p>
+          <div class="shot-sheet__thumbs">
+            <div v-for="(s, i) in shots" :key="s.url" class="shot-thumb">
+              <img :src="s.url" alt="" />
+              <button class="shot-thumb__del" @click="removeShot(i)"><X :size="13" /></button>
+            </div>
+            <button v-if="shots.length < 3" class="shot-add" @click="fileInput?.click()">
+              <Plus :size="20" />
+              <span>补拍</span>
+            </button>
+          </div>
+          <div class="shot-sheet__actions">
+            <button class="shot-btn shot-btn--ghost" @click="clearShots">取消</button>
+            <button class="shot-btn shot-btn--primary" @click="startRecognize">
+              开始识别({{ shots.length }}张)
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- 识别中遮罩 -->
     <Transition name="fade">
       <div v-if="scanning" class="scan-mask">
@@ -91,31 +99,29 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onActivated } from 'vue'
+import { ref, onMounted, onActivated, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Camera, Lock, KeyRound, ChevronRight, ScanLine, ImageOff } from 'lucide-vue-next'
-import { recognizeAPI, historyAPI, recommendAPI } from '@/utils/api'
+import { Camera, Lock, KeyRound, ChevronRight, ScanLine, ImageOff, X, Plus } from 'lucide-vue-next'
+import { recognizeAPI, historyAPI } from '@/utils/api'
 import { hasApiKey } from '@/local/byok'
 
 const router = useRouter()
 
 const keyReady = ref(true)
 const history = ref([])
-const recommends = ref([])
 const scanning = ref(false)
 const scanHint = ref('正在识别标签…')
 const fileInput = ref(null)
+
+/** 待识别照片队列(同一包装最多 3 张) */
+const shots = ref([])
 
 const load = async () => {
   keyReady.value = hasApiKey()
   try {
     const h = await historyAPI.getHistoryList()
     if (h.code === 200) history.value = (h.data || []).slice(0, 5)
-  } catch { /* 忽略 */ }
-  try {
-    const r = await recommendAPI.list(6)
-    if (r.code === 200) recommends.value = r.data?.items || []
   } catch { /* 忽略 */ }
 }
 
@@ -128,16 +134,34 @@ const pickPhoto = () => {
   fileInput.value?.click()
 }
 
-const onFile = async (e) => {
+/** 拍完一张进入确认面板,可补拍或开始识别 */
+const onFile = (e) => {
   const file = e.target.files?.[0]
   e.target.value = ''
   if (!file) return
+  if (shots.value.length >= 3) return
+  shots.value.push({ file, url: URL.createObjectURL(file) })
+}
+
+const removeShot = (i) => {
+  URL.revokeObjectURL(shots.value[i].url)
+  shots.value.splice(i, 1)
+}
+
+const clearShots = () => {
+  shots.value.forEach((s) => URL.revokeObjectURL(s.url))
+  shots.value = []
+}
+
+const startRecognize = async () => {
+  if (!shots.value.length) return
+  const files = shots.value.map((s) => s.file)
 
   scanning.value = true
-  scanHint.value = '正在识别标签…'
+  scanHint.value = files.length > 1 ? `正在综合识别 ${files.length} 张照片…` : '正在识别标签…'
   const slowTimer = setTimeout(() => { scanHint.value = 'AI 正在仔细看配料表…' }, 6000)
   try {
-    const res = await recognizeAPI.uploadImage(file)
+    const res = await recognizeAPI.uploadImage(files.length === 1 ? files[0] : files)
     if (res.code === 200 && res.data?.id) {
       const resultId = String(res.data.id)
       // 与 Upload.vue 一致:结果缓存进 scanResults,Result 页直接读
@@ -147,14 +171,17 @@ const onFile = async (e) => {
         store[resultId] = payload
         localStorage.setItem('scanResults', JSON.stringify(store))
       } catch { /* 容量满则跳过缓存,Result 会回落到历史记录 */ }
+      clearShots()
       router.push(`/result/${resultId}`)
     }
-    // 失败提示已由 api 层 localErr 弹出,留在首页即可
+    // 失败提示已由 api 层 localErr 弹出,保留照片让用户重试或取消
   } finally {
     clearTimeout(slowTimer)
     scanning.value = false
   }
 }
+
+onBeforeUnmount(clearShots)
 
 const scoreClass = (s) => {
   if (s == null) return 'score-chip--na'
@@ -326,48 +353,100 @@ onActivated(load)
 }
 .ahome__empty-sub { font-size: 13px; margin: 0; }
 
-/* ── 推荐横滑卡 ── */
-.rec-scroll {
+/* ── 多图确认面板 ── */
+.shot-sheet {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 16, 12, 0.5);
+  z-index: 1500;
   display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  align-items: flex-end;
 }
-.rec-scroll::-webkit-scrollbar { display: none; }
-.rec-card {
-  flex: 0 0 150px;
+.shot-sheet__panel {
+  width: 100%;
   background: var(--w-surface, #fffdf6);
-  border: 1px solid var(--w-border-soft, #e8dcc8);
-  border-radius: 14px;
-  padding: 12px;
+  border-radius: 20px 20px 0 0;
+  padding: 18px 18px calc(env(safe-area-inset-bottom, 0px) + 18px);
 }
-.rec-card__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-.rec-card__cat { font-size: 11px; color: var(--w-ink-mid, #8a7a66); }
-.rec-card__name {
-  font-size: 13.5px;
-  font-weight: 500;
+.shot-sheet__title {
+  font-size: 16px;
+  font-weight: 600;
   color: var(--w-ink, #2b2018);
   margin: 0 0 4px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
-.rec-card__reason {
-  font-size: 11px;
-  color: #4D7C0F;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.shot-sheet__hint {
+  font-size: 12.5px;
+  color: var(--w-ink-mid, #8a7a66);
+  margin: 0 0 14px;
 }
+.shot-sheet__thumbs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.shot-thumb {
+  position: relative;
+  width: 84px;
+  height: 84px;
+}
+.shot-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+.shot-thumb__del {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 0;
+  background: #1f2937;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.shot-add {
+  width: 84px;
+  height: 84px;
+  border: 1.5px dashed var(--w-border-soft, #d9c9ab);
+  border-radius: 12px;
+  background: none;
+  color: var(--w-ink-mid, #8a7a66);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 12px;
+}
+.shot-add:active { transform: scale(0.95); }
+.shot-sheet__actions {
+  display: flex;
+  gap: 10px;
+}
+.shot-btn {
+  flex: 1;
+  height: 46px;
+  border-radius: 12px;
+  border: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.shot-btn--ghost {
+  background: var(--w-primary-pale, #f4ecdc);
+  color: var(--w-ink-mid, #6b5d4c);
+}
+.shot-btn--primary {
+  flex: 2;
+  background: linear-gradient(135deg, #2A9D8F, #1F7A6E);
+  color: #fff;
+}
+.shot-btn:active { transform: scale(0.97); }
 
 /* ── 拍照 FAB ── */
 .ahome__file { display: none; }

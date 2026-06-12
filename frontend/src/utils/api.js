@@ -129,17 +129,19 @@ export function clearLlmConfig() {
   localStorage.removeItem(LLM_CONFIG_KEY)
 }
 
-// 识别相关 API（后端：/recognize/upload；单机模式：BYOK 直连阿里云）
+// 识别相关 API（后端：/recognize/upload；单机模式：BYOK 直连阿里云,支持同包装多图）
 export const recognizeAPI = {
-  uploadImage: async (file) => {
+  uploadImage: async (fileOrFiles) => {
     if (isLocalMode()) {
       try {
         const { localRecognize } = await import('@/local/recognizeFlow')
-        return ok(await localRecognize(file))
+        return ok(await localRecognize(fileOrFiles))
       } catch (e) {
         return localErr(e)
       }
     }
+    // 网页版后端接口暂只支持单图,多图时取第一张
+    const file = Array.isArray(fileOrFiles) ? fileOrFiles[0] : fileOrFiles
     const formData = new FormData()
     formData.append('file', file)
 

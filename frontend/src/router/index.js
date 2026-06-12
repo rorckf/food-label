@@ -113,10 +113,10 @@ const readUser = () => {
 }
 
 router.beforeEach((to, from, next) => {
-    // ── 单机模式(App/BYOK):无账号体系 ──
+    // ── 单机模式(App/BYOK):无账号体系,纯工具形态 ──
     if (isLocalMode()) {
-        // 登录/注册页与管理后台在单机模式下不存在,一律回首页
-        if (to.meta.guestOnly || to.meta.requiresAdmin) {
+        // 登录/注册/管理后台/推荐页在单机模式下不存在,一律回首页
+        if (to.meta.guestOnly || to.meta.requiresAdmin || to.name === 'Recommend') {
             return next({ path: '/' })
         }
         // 健康档案引导仍然保留(存本机),完成前强制进入引导页

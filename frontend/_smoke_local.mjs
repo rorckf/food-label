@@ -22,8 +22,11 @@ check('精确匹配 柠檬酸', getAdditiveInfo('柠檬酸'), (v) => v.category.
 // 3. 模糊命中(库内全名为"苯甲酸及其钠盐（包括苯甲酸，苯甲酸钠）")
 check('模糊匹配 苯甲酸钠', getAdditiveInfo('苯甲酸钠'), (v) => v.category === '防腐剂')
 
-// 4. INS 代码
+// 4. INS 代码(手工表 + 自动全量索引 + E 前缀)
 check('INS 330 → 柠檬酸', getAdditiveInfo('330'), (v) => v.description.includes('三羧酸') || v.category.includes('酸度'))
+check('INS 127(自动索引) → 赤藓红', getAdditiveInfo('127'), (v) => v.category.includes('着色剂'))
+check('E211 → 苯甲酸类防腐剂', getAdditiveInfo('E211'), (v) => v.category.includes('防腐剂'))
+check('INS 968(自动索引) → 赤藓糖醇', getAdditiveInfo('968'), (v) => v.category.includes('甜味剂'))
 
 // 5. 批量匹配 + 兜底
 const matched = batchMatchAdditives(['水', '白砂糖', '柠檬酸', '山梨酸钾', '神秘成分X胶'])
@@ -57,6 +60,13 @@ check('能量交叉校验修正', { e: nut.energy, f: flag.energy }, (v) => v.e 
 // 9. 营养提示(整份口径:500g 装,糖 12g/100g → 60g/份 = 20% NRV 适中)
 const tips = generateHealthTips({ carbohydrate: 12 }, parseGrams('500g'))
 check('碳水提示适中', tips.find((t) => t.name === '碳水化合物'), (t) => t && t.level === '适中')
+
+// 9b. 净含量解析(多件装乘法修复:旧逻辑 "100g×5"→1005)
+check('parseGrams 500g', parseGrams('500g'), (v) => v === 500)
+check('parseGrams 250ml', parseGrams('250ml'), (v) => v === 250)
+check('parseGrams 100g×5', parseGrams('100g×5'), (v) => v === 500)
+check('parseGrams 2x100g', parseGrams('2x100g'), (v) => v === 200)
+check('parseGrams 异常回退100', parseGrams('见包装'), (v) => v === 100)
 
 // 10. 过敏原:配料含明确项 + 交叉污染段落
 const alg = extractAllergens(['小麦粉', '鸡蛋', '白砂糖'], '含麸质。本生产线也加工含花生、芝麻的产品。')
