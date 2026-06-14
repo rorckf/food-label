@@ -64,9 +64,9 @@ const routes = [
         meta: { requiresAuth: true }
     },
     {
-        path: '/compare',
-        name: 'Compare',
-        component: lazyLoad('Compare'),
+        path: '/shelf',
+        name: 'ShelfRank',
+        component: lazyLoad('ShelfRank'),
         meta: { requiresAuth: true }
     },
     {

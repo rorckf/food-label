@@ -242,21 +242,6 @@ export const additiveAPI = {
   }
 }
 
-// 同品类对比 API（模块六；单机模式对比本地历史记录）
-export const compareAPI = {
-  compare: async (ids) => {
-    if (isLocalMode()) {
-      try {
-        const m = await import('@/local/compare')
-        return ok(m.localCompare(ids))
-      } catch (e) {
-        return localErr(e)
-      }
-    }
-    return api.post('/compare', { ids })
-  }
-}
-
 // 健康食品推荐 API（个性化推荐模块；单机模式基于本机健康档案 + 内置食品库）
 export const recommendAPI = {
   list: async (limit = 10) => {

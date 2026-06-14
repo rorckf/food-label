@@ -22,7 +22,7 @@
 
 <script setup>
 import { useRoute } from 'vue-router'
-import { UploadCloud, Clock, Scale, Settings2, Sparkles } from 'lucide-vue-next'
+import { UploadCloud, Clock, Trophy, Settings2, Sparkles } from 'lucide-vue-next'
 
 const route = useRoute()
 
@@ -30,7 +30,7 @@ const items = [
   { to: '/',            label: '上传识别', icon: UploadCloud, match: ['/'] },
   { to: '/recommend',   label: '为你推荐', icon: Sparkles,    match: ['/recommend'] },
   { to: '/history',     label: '历史记录', icon: Clock,       match: ['/history'] },
-  { to: '/compare',     label: '成分对比', icon: Scale,       match: ['/compare'] },
+  { to: '/shelf',       label: '货架PK',   icon: Trophy,      match: ['/shelf'] },
   { to: '/preferences', label: '个人偏好', icon: Settings2,   match: ['/preferences'] },
 ]
 

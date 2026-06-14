@@ -18,7 +18,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Home, History, Scale, SlidersHorizontal } from 'lucide-vue-next'
+import { Home, History, Trophy, SlidersHorizontal } from 'lucide-vue-next'
 
 const props = defineProps({
   /** 单机App模式:无视窗口宽度,始终显示 */
@@ -30,7 +30,7 @@ const route = useRoute()
 const tabs = [
   { path: '/', label: '首页', icon: Home },
   { path: '/history', label: '历史', icon: History },
-  { path: '/compare', label: '对比', icon: Scale },
+  { path: '/shelf', label: '货架PK', icon: Trophy },
   { path: '/preferences', label: '偏好', icon: SlidersHorizontal },
 ]
 
@@ -96,11 +96,6 @@ onUnmounted(() => window.removeEventListener('resize', handleResize))
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.04em;
-}
-
-/* 桌面端(非 force)隐藏由 JS 控制,此处兜底 */
-@media (min-width: 1200px) {
-  .bottom-nav:not(.bottom-nav--force) { }
 }
 
 [data-theme="dark"] .bottom-nav {
