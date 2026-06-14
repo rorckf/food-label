@@ -276,6 +276,33 @@
           </div>
         </article>
 
+        <!-- 代价换算卡：把营养数字翻译成身体能感知的代价 -->
+        <article v-if="foodCost" class="parch-card cost-card">
+          <header class="parch-card__head">
+            <span class="parch-card__ornament">❖</span>
+            <h3 class="parch-card__title">{{ foodCost.basis === 'package' ? '吃完整份的代价' : '每 100g 的代价' }}</h3>
+          </header>
+          <div class="parch-card__body">
+            <div class="cost-grid">
+              <div v-for="it in foodCost.items" :key="it.key" class="cost-item">
+                <div class="cost-item__head">
+                  <span class="cost-icon">{{ it.icon }}</span>
+                  <span class="cost-figure">
+                    <span class="cost-value">{{ it.value }}</span>
+                    <span class="cost-unit">{{ it.unit }}</span>
+                  </span>
+                </div>
+                <div v-if="it.cubes != null" class="cube-row">
+                  <span v-for="n in it.cubes" :key="n" class="cube"></span>
+                  <span v-if="it.cubesMore" class="cube-more">…</span>
+                </div>
+                <p class="cost-detail">{{ it.detail }}</p>
+                <p v-if="it.note" class="cost-note">* {{ it.note }}</p>
+              </div>
+            </div>
+          </div>
+        </article>
+
         <!-- 健康评估卡 -->
         <article v-if="hasHealthTips" class="parch-card health-card">
           <header class="parch-card__head">
@@ -366,6 +393,7 @@ import * as echarts from 'echarts'
 import { additiveAPI, historyAPI, recognizeAPI } from '@/utils/api'
 import AdditiveDetailDialog from '@/components/dialogs/AdditiveDetailDialog.vue'
 import { runLabelCheck } from '@/local/labelCheck'
+import { computeFoodCost } from '@/local/foodCost'
 import ShareActions from '@/components/ShareActions.vue'
 import ShareCardModal from '@/components/ShareCardModal.vue'
 
@@ -376,6 +404,10 @@ const resultId = route.params.id
 const result = ref(null)
 // 标签体检（打假模式）：纯前端规则引擎，对识别结果做 GB 7718/28050 合规核查
 const labelCheck = computed(() => (result.value ? runLabelCheck(result.value) : null))
+// 代价换算：糖→方糖、钠→盐、能量→运动时间
+const foodCost = computed(() =>
+  result.value ? computeFoodCost(result.value.nutrition, result.value.netContent ?? result.value.netWeight) : null
+)
 const isSqueezing = ref(false)
 const shareTargetEl = ref(null)
 const radarChartEl = ref(null)
@@ -1221,6 +1253,38 @@ onMounted(async () => {
   line-height: 1.55;
 }
 .risk-icon { color: var(--w-amber); flex-shrink: 0; font-weight: 600; }
+
+/* ── 代价换算卡 ── */
+.cost-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--w-space-3);
+}
+.cost-item {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.025);
+  border: 1px solid var(--w-border-soft);
+}
+.cost-item__head { display: flex; align-items: center; gap: 10px; }
+.cost-icon { font-size: 26px; line-height: 1; }
+.cost-figure { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
+.cost-value {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 26px; font-weight: 700; color: var(--w-terracotta, #c15637);
+  line-height: 1;
+}
+.cost-unit { font-size: 13px; color: var(--w-ink-mid); }
+.cube-row { display: flex; flex-wrap: wrap; gap: 3px; margin: 9px 0 6px; align-items: center; }
+.cube {
+  width: 13px; height: 13px; border-radius: 3px;
+  background: linear-gradient(135deg, #fff, #e7eef5);
+  border: 1px solid rgba(120, 140, 165, 0.5);
+  box-shadow: inset 0 -2px 0 rgba(120, 140, 165, 0.18);
+}
+.cube-more { font-size: 14px; color: var(--w-ink-mid); margin-left: 2px; }
+.cost-detail { margin: 6px 0 0; font-size: 12.5px; color: var(--w-ink-mid); line-height: 1.6; }
+.cost-note { margin: 4px 0 0; font-size: 11px; color: var(--w-ink-mute); line-height: 1.5; }
 
 /* ── 标签体检卡（打假模式）── */
 .inspect-summary { margin-left: auto; display: inline-flex; gap: 6px; }
